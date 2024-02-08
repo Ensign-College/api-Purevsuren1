@@ -1,8 +1,12 @@
 const express = require("express");
 
 const bodyParser = require("body-parser");
-
+const cors = require('cors');
  const Redis = require('redis'); // import the Redis library
+
+const options = { 
+    origin:'http://localhost:3000'//allow call frontend to backend
+}
 
  const redisClient = Redis.createClient({
     url:`redis://localhost:6379`
@@ -12,7 +16,8 @@ const bodyParser = require("body-parser");
 
 const app = express(); //create a express application
 app.use(bodyParser.json());
-const port = 3000;
+app.use(cors(options)); //allow call frontend to backend
+const port = 3001;
 app.listen(port, () =>{
     redisClient.connect(); //connects to REdis database
     console.log(`API is listening on port: ${port}`)//template literal
@@ -24,10 +29,10 @@ app.listen(port, () =>{
 //3 req - request from the browser
 //res - response to the browser
 
-app.get('/boxes', (req, res, next)=>{
-    let boxes = redisClient.json.get('boxes', {path:'$'}); //get boxes
+app.get('/boxes', async (req, res, next)=>{
+    let boxes = await redisClient.json.get('boxes', {path:'$'}); //get boxes
     //send the boxes to browser
-    res.send(JSON.stringify(boxes)) //convert boxes into a string
+    res.json(boxes[0]); //boxes is array of arrays //convert boxes into a string
 });//return boxes to the user
 
 app.post('/boxes', async (req, res, next) => { //async means we will await promies
