@@ -15,6 +15,10 @@ redisClient.on('connect', () => {
 redisClient.on('error', (err) => {
     console.error('Redis connection error:', err);
 });
+redisClient.on('end', () => {
+    console.log('Connection to Redis closed. Attempting to reconnect...');
+    // Implement logic to reconnect here
+});
 
 const options = {
     origin: 'http://localhost:3000'
@@ -46,7 +50,7 @@ app.post('/boxes', async (req, res, next) => {
         newBox.id = parseInt(await redisClient.json.arrLen('boxes', '$')) + 1;
         await redisClient.json.arrAppend('boxes', '$', newBox);
         res.json(newBox);
-    } catch (error) {
+    } catch (error) {  // Remove 'cdnpm' from this line
         console.error('Error adding new box to Redis:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -55,25 +59,46 @@ app.post('/boxes', async (req, res, next) => {
 app.post("/payments", async (req, res, next) => {
     try {
         const {
-            customerId, billingAddress, billingCity,
-            billingState, billingZipCode, totalAmount, paymentId,
-            cardId, cardType, last4digits, orderId
+            customerId,
+            billingAddress,
+            billingCity,
+            billingState,
+            billingZipCode,
+            totalAmount,
+            paymentId,
+            cardId,
+            cardType,
+            last4digits,
+            orderId
         } = req.body;
 
         const payment = {
-            customerId, billingAddress, billingCity,
-            billingState, billingZipCode, totalAmount, paymentId,
-            cardId, cardType, last4digits, orderId
+            customerId,
+            billingAddress,
+            billingCity,
+            billingState,
+            billingZipCode,
+            totalAmount,
+            paymentId,
+            cardId,
+            cardType,
+            last4digits,
+            orderId
         }
 
         const paymentKey = `payments:${customerId}-${Date.now().toString()}`
 
-        await redisClient.json.set(paymentKey, '.', payment);
-
-        res.status(200).json({message: 'Payment successfully stored'});
+        // Wrap Redis operation in try-catch
+        try {
+            await redisClient.json.set(paymentKey, '.', payment);
+            res.status(200).json({message: 'Payment successfully stored'});
+        } catch (error) {
+            console.error('Error storing payment:', error);
+            res.status(500).json({ error: 'Internal server error', message: error.message });
+        }
     } catch (error) {
-        console.error('Error storing:', error);
-        res.status(500).json({error: 'Internal server error1111'});
+        console.error('Error processing payment:', error);
+        res.status(500).json({ error: 'Internal server error', message: error.message });
     }
 });
 app.get("/payments", async (req, res, next) => {
