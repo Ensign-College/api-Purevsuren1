@@ -5,18 +5,24 @@ const Redis = require('redis');
 const redisClient = Redis.createClient({
     url: 'redis://localhost:6379'
 });
+const { addOrder, getOrder } = require("./orderservice.js"); //import the addOrder function from the orderservice.js file
+const { addOrderItem, getOrderItem } = require("./orderItems"); // import the addOrderItem function from the orderItems.js file
+const fs = require("fs"); // import the file system library
+const Schema = JSON.parse(fs.readFileSync("./orderItemSchema.json", "utf8")); // read the orderItemSchema.json file and parse it as JSON
+const Ajv = require("ajv"); // import the ajv library
+const ajv = new Ajv(); // create an ajv object to validate JSON
+
 
 redisClient.on('connect', () => {
     console.log('Connected to Redis');
-    // Read the JSON file and store it in Redis
-    storeJsonInRedis();
+    
 });
 
 redisClient.on('error', (err) => {
     console.error('Redis connection error:', err);
 });
 redisClient.on('end', () => {
-    console.log('Connection to Redis closed. Attempting to reconnect...');
+    console.log('Connection to Redis closed. Attempting to reconnect..');
     // Implement logic to reconnect here
 });
 
@@ -30,7 +36,7 @@ app.use(cors(options));
 
 const port = 3001;
 app.listen(port, () => {
-    
+    redisClient.connect();
     console.log(`API is listening on port: ${port}`);
 });
 
@@ -145,69 +151,86 @@ app.get('/payments/:paymentId?', async (req, res) => {
     }
 }); 
 
-// app.post("/orders", async (req, res) => {
-//     let order = req.body;
-//     let responseStatus = order.productQuantity && order.ShippingAddress ?200 : 400;
-// if(responseStatus === 200){
-//     try{
-//     await addOrder({redisClient, order});
-//     }catch(error){
-//         console.error(error);
-//         res.status(500).send("internal server error");
-//         return;
-//     }
-// }else{
-//     res.status(responseStatus);
-//     res.send('Missing one of the following fields: ${ order.productQuantity ? "" : "productQuantity" } ${order.ShippingAddress ? "" : "ShippingAddress"}
-//     );
-// }
-// res.status(responseStatus).send();
-
-// });
-// app.get("/orders/:orderID", async(req, res) => {
-// const orderId = req.param.orderId;
-// let order = await getOrder({redisClient, orderId});
-// if (order === null){
-// res.status(404).send("order not found");
-
-// }else{
-// res.json(order);
-// }
-
-// });
-// //Order items
-// app.post("/orderItems", async (req, res)=> {
-// try {
-// console.log("Schema:", Schema);
-// const validate = Ajv.compile(Schema);
-// const valid = validate(req.body);
-// if (!valid) {
-// return res.status(400).json({error: "invalid request body"});
-// }
-// console.log("Request body", req.body);
-// //calling addOrderOtem function and storing the result
-// const orderItemId = await addOrderItem({
-// redisClient,
-//  orderItem: req.body,
-// });
-// //respond with result
-// res
-// .status(201)
-// .json({orderItemId, message: "Order item added successfully"});
-
-// }catch(error){
-// console.error("error adding item", error);
-// res.status(500).json({error: "internal server error"})
-// }
-// });
-
-// app.get("/orderItems/:orderItemId", async (req, res) =>{
-// try {
-// const orderItemId = req.params.orderItemId;
-// const orderItem = await getOrderItem({redisClient, orderItemId});
-// res.json(orderItem);
-// }catch(error){
-// console.error("error getting ortder otem", error);
-// res.status(500).json({error: "Internal server error"})
-// }
-// });
+//Order
+app.post("/orders", async (req, res) => {
+    let order = req.body; //get the order from the request body
+  
+    // order details, include product quantity and shipping address
+    let responseStatus =
+      order.productQuantity && order.ShippingAddress ? 200 : 400;
+  
+    if (responseStatus === 200) {
+      try {
+        // addOrder function to handle order creation in the database
+        await addOrder({ redisClient, order });
+        res
+          .status(200)
+          .json({ message: "Order created successfully", order: order });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+    } else {
+      res.status(responseStatus);
+      res.send(
+        `Missing one of the following fields: ${
+          order.productQuantity ? "" : "productQuantity"
+        } ${order.ShippingAddress ? "" : "ShippingAddress"}`
+      );
+    }
+    res.status(responseStatus).send();
+  });
+  
+  //GET /orders/:orderId
+  app.get("/orders/:orderId", async (req, res) => {
+    try {
+      const orderId = req.params.orderId;
+      const order = await getOrder({ redisClient, orderId });
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error getting order:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+//Order items
+//ORDER ITEMS
+app.post("/orderItems", async (req, res) => {
+    try {
+      console.log("Schema:", Schema);
+      const validate = ajv.compile(Schema);
+      const valid = validate(req.body);
+      if (!valid) {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+      console.log("Request Body:", req.body);
+  
+      // Calling addOrderItem function and storing the result
+      const orderItemId = await addOrderItem({
+        redisClient,
+        orderItem: req.body,
+      });
+  
+      // Responding with the result
+      res
+        .status(201)
+        .json({ orderItemId, message: "Order item added successfully" });
+    } catch (error) {
+      console.error("Error adding order item:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  app.get("/orderItems/:orderItemId", async (req, res) => {
+    try {
+      const orderItemId = req.params.orderItemId;
+      const orderItem = await getOrderItem({ redisClient, orderItemId });
+      res.json(orderItem);
+    } catch (error) {
+      console.error("Error getting order item:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
