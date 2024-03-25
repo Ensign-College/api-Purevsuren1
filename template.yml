@@ -1,17 +1,17 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
 
 Resources:
-  MyVPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
+  # MyVPC:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: 10.0.0.0/16
 
-  MySubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref MyVPC
-      CidrBlock: 10.0.0.0/24
+  # MySubnet:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref MyVPC
+  #     CidrBlock: 10.0.0.0/24
 
   MyElasticacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
@@ -21,7 +21,7 @@ Resources:
         - subnet-02c217f126c0ce1d5
 
   MyElasticacheRedis:
-    Type: 'AWS::ElastiCache::CacheCluster'
+    Type: "AWS::ElastiCache::CacheCluster"
     Properties:
       CacheNodeType: cache.t2.micro
       Engine: redis
@@ -35,16 +35,16 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for Lambda function
-      VpcId: vpc-080542bd10d35d8b3
+      VpcId: vpc-066e6a637e37f2752
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 0.0.0.0/0  # This allows access from any IP, modify as needed
+          CidrIp: 0.0.0.0/0 # This allows access from any IP, modify as needed
 
   # Function to handle POST requests for sending payments
   SendPaymentFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.sendPaymentHandler
       Runtime: nodejs20.x
@@ -54,7 +54,7 @@ Resources:
 
   # Function to handle GET requests for payment by ID
   GetPaymentFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.getPaymentHandler
       Runtime: nodejs20.x
@@ -64,7 +64,7 @@ Resources:
 
   # Function to handle GET requests for payments per customer
   GetPaymentsPerCustomerFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.getPaymentsPerCustomerHandler
       Runtime: nodejs20.x
@@ -74,7 +74,7 @@ Resources:
 
   # Function to handle POST requests for orders
   AddOrderFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.addOrderHandler
       Runtime: nodejs20.x
@@ -84,7 +84,7 @@ Resources:
 
   # Function to handle GET requests for orders by ID
   GetOrderFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.getOrderHandler
       Runtime: nodejs20.x
@@ -94,7 +94,7 @@ Resources:
 
   # Function to handle POST requests for order items
   AddOrderItemFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       Handler: index.addOrderItemHandler
       Runtime: nodejs20.x
