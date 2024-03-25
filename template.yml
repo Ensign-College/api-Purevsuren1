@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
 
 Resources:
-
   MyVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -19,7 +18,7 @@ Resources:
     Properties:
       Description: Subnet group for ElastiCache
       SubnetIds:
-        - !Ref MySubnet
+        - subnet-02c217f126c0ce1d5
 
   MyElasticacheRedis:
     Type: 'AWS::ElastiCache::CacheCluster'
@@ -36,27 +35,69 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for Lambda function
-      VpcId: !Ref MyVPC
+      VpcId: vpc-080542bd10d35d8b3
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0  # This allows access from any IP, modify as needed
 
-  MyLambdaFunction:
+  # Function to handle POST requests for sending payments
+  SendPaymentFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: index.handler
-      Runtime: nodejs14.x
-      CodeUri: ./lambda
+      Handler: index.sendPaymentHandler
+      Runtime: nodejs20.x
+      CodeUri: .
       MemorySize: 128
       Timeout: 30
-      Environment:
-        Variables:
-          REDIS_HOST: !GetAtt MyElasticacheRedis.RedisEndpointAddress
-      Events:
-        MyApi:
-          Type: Api
-          Properties:
-            Path: /myendpoint
-            Method: get
+
+  # Function to handle GET requests for payment by ID
+  GetPaymentFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.getPaymentHandler
+      Runtime: nodejs20.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 30
+
+  # Function to handle GET requests for payments per customer
+  GetPaymentsPerCustomerFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.getPaymentsPerCustomerHandler
+      Runtime: nodejs20.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 30
+
+  # Function to handle POST requests for orders
+  AddOrderFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.addOrderHandler
+      Runtime: nodejs20.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 30
+
+  # Function to handle GET requests for orders by ID
+  GetOrderFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.getOrderHandler
+      Runtime: nodejs20.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 30
+
+  # Function to handle POST requests for order items
+  AddOrderItemFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.addOrderItemHandler
+      Runtime: nodejs20.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 30
