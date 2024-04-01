@@ -12,7 +12,6 @@ const Schema = JSON.parse(fs.readFileSync("./orderItemSchema.json", "utf8")); //
 const Ajv = require("ajv"); // import the ajv library
 const ajv = new Ajv(); // create an ajv object to validate JSON
 
-
 redisClient.on('connect', () => {
     console.log('Connected to Redis');
     
