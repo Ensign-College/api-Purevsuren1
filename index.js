@@ -8,12 +8,13 @@ const ajv = new Ajv();
 const AWS = require('aws-sdk');
 
 const redisClient = Redis.createClient({
-    url:`redis://localhost:6379`
+    url:`redis://${process.env.REDIS_HOST}:6379`
 });
 
 const lambda = new AWS.Lambda();
 
 exports.boxesHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const getAsync = promisify(redisClient.json.get).bind(redisClient);
       const boxes = await getAsync('boxes');
@@ -31,6 +32,7 @@ exports.boxesHandler = async (event, context) => {
 };
 
 exports.ordersHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const order = JSON.parse(event.body);
       let responseStatus = order.productQuantity ? 200 : 400 && order.shippingAddress ? 200 : 400;
@@ -61,6 +63,7 @@ exports.ordersHandler = async (event, context) => {
 };
 
 exports.orderItemsHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const validate = ajv.compile(Schema);
       const valid = validate(JSON.parse(event.body));
@@ -87,6 +90,7 @@ exports.orderItemsHandler = async (event, context) => {
 };
 
 exports.ordersByIdHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const orderId = event.pathParameters.orderId;
       const order = await getOrder({ redisClient, orderId });
@@ -105,6 +109,7 @@ exports.ordersByIdHandler = async (event, context) => {
 };
 
 exports.paymentsHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const payments = [];
 
@@ -137,6 +142,7 @@ exports.paymentsHandler = async (event, context) => {
 };
 
 exports.paymentByIdHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const { paymentId } = event.pathParameters;
       const paymentKey = `payments:${paymentId}`;
@@ -172,6 +178,7 @@ exports.paymentByIdHandler = async (event, context) => {
 };
 
 exports.postPaymentHandler = async (event, context) => {
+    redisClient.connect();
   try {
       const {
           customerId, billingAddress, billingCity,
